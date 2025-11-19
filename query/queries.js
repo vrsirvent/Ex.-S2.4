@@ -56,10 +56,10 @@ db.restaurants.find({ borough: { $in: ["Staten Island", "Queens", "Bronx", "Broo
 db.restaurants.find({ borough: { $nin: ["Staten Island", "Queens", "Bronx", "Brooklyn"] } }, { _id: 0, restaurant_id: 1, name: 1, borough: 1, cuisine: 1 });
 
 // 20. Trobar restaurant_id, name, borough i cuisine amb marcador no superior a 10.
-db.restaurants.find({ "grades.score": { $not: { $gt: 10 } } }, { _id: 0, restaurant_id: 1, name: 1, borough: 1, cuisine: 1 });
+db.restaurants.find({ "grades.score": { $not: { $gt: 10 }}}, { restaurant_id: 1, name: 1, borough: 1, cuisine: 1, _id: 0 });
 
 // 21. Trobar restaurants que preparen peix, no 'American' ni 'Chinees', o nom comença amb 'Wil'.
-
+db.restaurants.find({ $or: [{ cuisine: "Seafood" }, { cuisine: { $nin: ["American", "Chinese"]}}, { name: /^Wil/ }]}, { _id: 0 });
 
 // 22. Trobar restaurant_id, name, i grades per grau "A", score 11, i data "2014-08-11T00:00:00Z".
 db.restaurants.find({ grades: { $elemMatch: { grade: "A", score: 11, date: ISODate("2014-08-11T00:00:00Z") } } }, { restaurant_id: 1, name: 1, grades: 1, _id: 0 });
@@ -80,7 +80,7 @@ db.restaurants.find({}, { _id: 0 }).sort({ name: -1 });
 db.restaurants.find({}, { _id: 0 }).sort({ cuisine: 1, borough: -1 });
 
 // 28. Mostrar direccions que no contenen el carrer.
-db.restaurants.find({ "address.street": "" }, { _id: 0, address: 1 });
+db.restaurants.find({ "address.street": "" }, { address: 1, _id: 0 });
 
 // 29. Seleccionar documents on el valor de `coordinate` és de tipus Double. Mostrar el name, restaurant_id i coordinades.
 
