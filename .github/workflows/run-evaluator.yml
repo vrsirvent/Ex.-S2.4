@@ -1,0 +1,76 @@
+name: MongoDB Queries Evaluator
+
+on: [push, pull_request] 
+
+permissions:
+  contents: write
+
+jobs:
+  run-evaluation:
+    runs-on: ubuntu-latest
+
+    env:
+      MONGO_CREDENTIAL: -u user -p pass --authenticationDatabase admin nyc
+      DOCKER_CONTAINER:  mongo-evaluator
+      MONGO_URL: mongodb://user:pass@mongo-evaluator:27017/nyc?authSource=admin
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install Node.js dependencies
+      run: npm install
+    
+    - name: Install Docker Compose
+      run: |
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
+            -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+    
+    - name: Generate formatted Queries to execute with mongosh
+      run: node script/formatQueries.js
+
+    - name: Start services with Docker Compose
+      run: docker-compose up -d
+    
+    - name: Check running containers
+      run: docker ps -a
+      
+    - name: Wait for MongoDB to be ready
+      run: |
+        for i in {0..60}; do
+          if docker exec $DOCKER_CONTAINER mongosh $MONGO_CREDENTIAL --quiet --eval "db.adminCommand('ping')" > /dev/null 2>&1; then
+            echo "✅ MongoDB is ready"
+            break
+          fi
+          echo "⏳ Waiting for MongoDB to be ready..."
+          sleep 6
+        done
+    
+    - name: Execute formatted queries with mongosh
+      run: |
+          docker exec -i $DOCKER_CONTAINER mongosh --quiet $MONGO_URL query/execute.js > result/myResult.json
+
+    - name: Generate query result report
+      run: node script/compareResults.js
+
+    - name: Generate query performance report
+      run: node script/performanceReporter.js
+
+    - name: Commit and push docs to main
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add docs
+        git commit -m "Update reports [skip ci]" || echo "No changes"
+        git push
+
+    - name: Stop containers
+      run: docker-compose down

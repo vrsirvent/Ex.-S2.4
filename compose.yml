@@ -1,0 +1,16 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongo-evaluator
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: pass
+      MONGO_INITDB_DATABASE: nyc
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh:ro
+      - ./mongo-seed/restaurants.json:/mongo-seed/restaurants.json:ro
+      - ./query/execute.js:/query/execute.js:ro
+      - ./query/indexes.js:/docker-entrypoint-initdb.d/indexes.js
+
